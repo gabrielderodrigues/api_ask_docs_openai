@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.api.v1 import chat
 
 app = FastAPI(
-    title="API Chat Azure OpenAI",
+    title="AskDocs API with Azure OpenAI",
     version="1.0.0"
 )
 
