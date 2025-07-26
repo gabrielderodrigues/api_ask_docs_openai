@@ -6,5 +6,4 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Prefixo para versão da API
 app.include_router(chat.router, prefix="/api/v1")
