@@ -2,8 +2,9 @@ import os
 from openai import AzureOpenAI
 from app.core.config import settings
 
-endpoint = os.getenv("ENDPOINT_URL", settings.AZURE_OPENAI_ENDPOINT)
-deployment = os.getenv("DEPLOYMENT_NAME", settings.AZURE_DEPLOYMENT_NAME)
+# Get Azure OpenAI credentials and deployment info from environment or settings
+endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", settings.AZURE_OPENAI_ENDPOINT)
+deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", settings.AZURE_OPENAI_DEPLOYMENT)
 subscription_key = os.getenv("AZURE_OPENAI_API_KEY", settings.AZURE_OPENAI_KEY)
 
 # Initialize Azure OpenAI client with key-based authentication
@@ -13,18 +14,15 @@ client = AzureOpenAI(
     api_version=getattr(settings, "AZURE_API_VERSION", "2025-01-01-preview"),
 )
 
-def get_chat_response(prompt: str) -> str:
-    # O bloco "system" define o comportamento do assistente (contexto).
-    # O bloco "user" traz a pergunta ou comando do usuário.
-    # Não é obrigatório ter o "system", mas é recomendado para melhores resultados.
-    # O "user" é essencial, pois representa a entrada do usuário.
+def get_chat_response(prompt: str, context: str = "") -> str:
+    # Builds the context from the embeddings plus the user's question
     chat_prompt = [
         {
             "role": "system",
             "content": [
                 {
                     "type": "text",
-                    "text": "Você é um assistente útil."
+                    "text": "You are a helpful assistant. Use the context below to answer exclusively about the file:\n" + context
                 }
             ]
         },
@@ -39,15 +37,18 @@ def get_chat_response(prompt: str) -> str:
         }
     ]
 
+    # Call Azure OpenAI to generate a chat completion based on the prompt and context
     completion = client.chat.completions.create(
-        model=deployment,
-        messages=chat_prompt,
-        max_tokens=6553,
-        temperature=0.7,
-        top_p=0.95,
-        frequency_penalty=0,
-        presence_penalty=0,
-        stop=None,
-        stream=False
+        model=deployment,           # Model deployment name
+        messages=chat_prompt,       # Chat prompt with context and user question
+        max_tokens=150,             # Maximum number of tokens in the response
+        temperature=0.7,            # Controls randomness/creativity
+        top_p=0.95,                 # Controls diversity of the response
+        frequency_penalty=0,        # Penalizes repeated phrases
+        presence_penalty=0,         # Encourages new topics in the response avoiding repetition
+        stop=None,                  # Optional stop sequences
+        stream=False                # If True, returns response as a stream
     )
+    
+    # Return the generated answer
     return completion.choices[0].message.content
